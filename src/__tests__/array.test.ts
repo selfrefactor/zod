@@ -16,10 +16,56 @@ util.assertEqual<[string, ...string[]], t1>(true);
 type t2 = z.infer<typeof minTwo>;
 util.assertEqual<string[], t2>(true);
 
+const baseSchema = z.object({
+	identifier: z.string(),
+});
+
+type Equals<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+const typeA = baseSchema.extend({
+  type: z.literal('typeA'),
+  aProperty: z.array(z.number()).min(1),
+	identifier:z.string().optional(),
+});
+
+const typeB = baseSchema.extend({
+  type: z.literal('typeB'),
+  bProperty: z.array(z.number()).min(1),
+	identifier:z.string().optional(),
+});
+
+const schemasWithIdentifiers = [typeA, typeB];
+type SchemasWithIdentifiersType = z.infer<(typeof schemasWithIdentifiers)[number]>;
+
+let schemasWithIdentifiersAsConst = [typeA, typeB] as const
+
+const unionWorks = z.discriminatedUnion(
+  'type',
+  [typeA, typeB]
+);
+const unionWorksDoesntWork = z.discriminatedUnion(
+  'type',
+  schemasWithIdentifiers
+);
+const unionAlsoWorks = z.discriminatedUnion(
+  'type',
+  schemasWithIdentifiersAsConst
+);
+type UnionWorksType = z.infer<typeof unionWorks>;
+type UnionAlsoWorksType = z.infer<typeof unionAlsoWorks>;
+type AreEqual = Equals<UnionWorksType, UnionAlsoWorksType>; // true
+export type Simplify<T> = {[KeyType in keyof T]: T[KeyType]} & {};
+
+type SimlifiedUnionWorksType = Simplify<UnionWorksType>;
+type SimlifiedUnionAlsoWorksType = Simplify<UnionWorksType>;
+
+
+
+
 test("passing validations", () => {
   minTwo.parse(["a", "a"]);
   minTwo.parse(["a", "a", "a"]);
   maxTwo.parse(["a", "a"]);
+	console.log(1)
   maxTwo.parse(["a"]);
   justTwo.parse(["a", "a"]);
   intNum.parse(["a"]);
